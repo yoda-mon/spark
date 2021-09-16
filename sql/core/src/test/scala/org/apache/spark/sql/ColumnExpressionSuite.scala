@@ -2930,9 +2930,9 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
     checkAnswer(simpleDf.filter($"src".ilike("a%")), simpleDf)
     checkAnswer(simpleDf.filter($"src".ilike("a_b")), Seq("a\nb").toDF())
     // double-escaping backslash
-    val dEscDf = Seq("\\__", "\\\\__").toDF("src")
-    checkAnswer(dEscDf.filter($"src".ilike("\\\\__")), Seq("\\__").toDF())
-    checkAnswer(dEscDf.filter($"src".ilike("%\\\\%\\%")), spark.emptyDataFrame)
+    val dEscDf = Seq("""\__""", """\\__""").toDF("src")
+    checkAnswer(dEscDf.filter($"src".ilike("""\\\__""")), Seq("""\__""").toDF())
+    checkAnswer(dEscDf.filter($"src".ilike("""%\\%\%""")), spark.emptyDataFrame)
     // unicode
     val uncDf = Seq("a\u20ACA", "A€a", "a€AA", "a\u20ACaz", "ЀЁЂѺΏỀ").toDF("src")
     checkAnswer(uncDf.filter($"src".ilike("_\u20AC_")), Seq("a\u20ACA", "A€a").toDF())
