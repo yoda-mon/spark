@@ -40,14 +40,15 @@ import org.apache.spark.sql.types.DayTimeIntervalType.DAY
 import org.apache.spark.unsafe.types.UTF8String
 
 class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
+
   import testImplicits._
 
   private lazy val booleanData = {
     spark.createDataFrame(sparkContext.parallelize(
       Row(false, false) ::
-      Row(false, true) ::
-      Row(true, false) ::
-      Row(true, true) :: Nil),
+        Row(false, true) ::
+        Row(true, false) ::
+        Row(true, true) :: Nil),
       StructType(Seq(StructField("a", BooleanType), StructField("b", BooleanType))))
   }
 
@@ -268,9 +269,9 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
   test("isNaN") {
     val testData = spark.createDataFrame(sparkContext.parallelize(
       Row(Double.NaN, Float.NaN) ::
-      Row(math.log(-1), math.log(-3).toFloat) ::
-      Row(null, null) ::
-      Row(Double.MaxValue, Float.MinValue):: Nil),
+        Row(math.log(-1), math.log(-3).toFloat) ::
+        Row(null, null) ::
+        Row(Double.MaxValue, Float.MinValue) :: Nil),
       StructType(Seq(StructField("a", DoubleType), StructField("b", FloatType))))
 
     checkAnswer(
@@ -335,10 +336,10 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
       Row(1, 1) :: Row(null, null) :: Nil)
 
     val nullData2 = spark.createDataFrame(sparkContext.parallelize(
-        Row("abc") ::
-        Row(null)  ::
+      Row("abc") ::
+        Row(null) ::
         Row("xyz") :: Nil),
-        StructType(Seq(StructField("a", StringType, true))))
+      StructType(Seq(StructField("a", StringType, true))))
 
     checkAnswer(
       nullData2.filter($"a" <=> null),
@@ -400,11 +401,11 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
   test("between") {
     val testData = sparkContext.parallelize(
       (0, 1, 2) ::
-      (1, 2, 3) ::
-      (2, 1, 0) ::
-      (2, 2, 4) ::
-      (3, 1, 6) ::
-      (3, 2, 0) :: Nil).toDF("a", "b", "c")
+        (1, 2, 3) ::
+        (2, 1, 0) ::
+        (2, 2, 4) ::
+        (3, 1, 6) ::
+        (3, 2, 0) :: Nil).toDF("a", "b", "c")
     val expectAnswer = testData.collect().toSeq.
       filter(r => r.getInt(0) >= r.getInt(1) && r.getInt(0) <= r.getInt(2))
 
@@ -606,9 +607,15 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
     )
 
     // Test error handling for invalid expressions.
-    intercept[IllegalArgumentException] { $"key".when($"key" === 1, -1) }
-    intercept[IllegalArgumentException] { $"key".otherwise(-1) }
-    intercept[IllegalArgumentException] { when($"key" === 1, -1).otherwise(-1).otherwise(-1) }
+    intercept[IllegalArgumentException] {
+      $"key".when($"key" === 1, -1)
+    }
+    intercept[IllegalArgumentException] {
+      $"key".otherwise(-1)
+    }
+    intercept[IllegalArgumentException] {
+      when($"key" === 1, -1).otherwise(-1).otherwise(-1)
+    }
   }
 
   test("sqrt") {
@@ -710,9 +717,9 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
         }
 
         def checkResult(
-            fromClause: String,
-            exceptionExpected: Boolean,
-            numExpectedRows: Int = 0): Unit = {
+                         fromClause: String,
+                         exceptionExpected: Boolean,
+                         numExpectedRows: Int = 0): Unit = {
           val stmt = s"SELECT *, input_file_name() FROM ($fromClause)"
           if (exceptionExpected) {
             val e = intercept[AnalysisException](sql(stmt)).getMessage
@@ -846,7 +853,7 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
 
   test("rand") {
     val randCol = testData.select($"key", rand(5L).as("rand"))
-    randCol.columns.length should be (2)
+    randCol.columns.length should be(2)
     val rows = randCol.collect()
     rows.foreach { row =>
       assert(row.getDouble(1) <= 1.0)
@@ -868,9 +875,9 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
     // So, in the optimizer, we will not collapse Project [rand + 1 AS rand1, rand - 1 AS rand2]
     // and Project [key, Rand 5 AS rand]. The final plan still has two Projects.
     val dfWithTwoProjects =
-      testData
-        .select($"key", (rand(5L) + 1).as("rand"))
-        .select(($"rand" + 1).as("rand1"), ($"rand" - 1).as("rand2"))
+    testData
+      .select($"key", (rand(5L) + 1).as("rand"))
+      .select(($"rand" + 1).as("rand1"), ($"rand" - 1).as("rand2"))
     checkNumProjects(dfWithTwoProjects, 2)
 
     // Now, we add one more project rand1 - rand2 on top of the query plan.
@@ -894,7 +901,7 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
 
   test("randn") {
     val randCol = testData.select($"key", randn(5L).as("rand"))
-    randCol.columns.length should be (2)
+    randCol.columns.length should be(2)
     val rows = randCol.collect()
     rows.foreach { row =>
       assert(row.getDouble(1) <= 4.0)
@@ -952,9 +959,9 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
   }
 
   def checkAnswer(
-      df: => DataFrame,
-      expectedAnswer: Seq[Row],
-      expectedSchema: StructType): Unit = {
+                   df: => DataFrame,
+                   expectedAnswer: Seq[Row],
+                   expectedSchema: StructType): Unit = {
     checkAnswer(df, expectedAnswer)
     assert(df.schema == expectedSchema)
   }
@@ -1234,7 +1241,7 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
   test("withField should replace field in nullable struct") {
     checkAnswer(
       nullableStructLevel1.withColumn("a", 'a.withField("b", lit("foo"))),
-      Row(null) :: Row(Row(1, "foo", 3)) ::  Nil,
+      Row(null) :: Row(Row(1, "foo", 3)) :: Nil,
       StructType(Seq(
         StructField("a", StructType(Seq(
           StructField("a", IntegerType, nullable = false),
@@ -1615,13 +1622,13 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
     // add new field, extract another field from original struct
     checkAnswer(
       structLevel1.withColumn("a", $"a".withField("d", lit(4)).getField("c")),
-      Row(3):: Nil,
+      Row(3) :: Nil,
       StructType(Seq(StructField("a", IntegerType, nullable = false))))
 
     // replace field, extract another field from original struct
     checkAnswer(
       structLevel1.withColumn("a", $"a".withField("a", lit(4)).getField("c")),
-      Row(3):: Nil,
+      Row(3) :: Nil,
       StructType(Seq(StructField("a", IntegerType, nullable = false))))
   }
 
@@ -1640,19 +1647,19 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
     // extract newly replaced field
     checkAnswer(
       nullStructLevel1.withColumn("a", $"a".withField("a", lit(4)).getField("a")),
-      Row(null):: Nil,
+      Row(null) :: Nil,
       StructType(Seq(StructField("a", IntegerType, nullable = true))))
 
     // add new field, extract another field from original struct
     checkAnswer(
       nullStructLevel1.withColumn("a", $"a".withField("d", lit(4)).getField("c")),
-      Row(null):: Nil,
+      Row(null) :: Nil,
       StructType(Seq(StructField("a", IntegerType, nullable = true))))
 
     // replace field, extract another field from original struct
     checkAnswer(
       nullStructLevel1.withColumn("a", $"a".withField("a", lit(4)).getField("c")),
-      Row(null):: Nil,
+      Row(null) :: Nil,
       StructType(Seq(StructField("a", IntegerType, nullable = true))))
   }
 
@@ -1671,19 +1678,19 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
     // extract newly replaced field
     checkAnswer(
       df.withColumn("a", $"a".withField("a", lit(4)).getField("a")),
-      Row(4) :: Row(null):: Nil,
+      Row(4) :: Row(null) :: Nil,
       StructType(Seq(StructField("a", IntegerType, nullable = true))))
 
     // add new field, extract another field from original struct
     checkAnswer(
       df.withColumn("a", $"a".withField("d", lit(4)).getField("c")),
-      Row(3) :: Row(null):: Nil,
+      Row(3) :: Row(null) :: Nil,
       StructType(Seq(StructField("a", IntegerType, nullable = true))))
 
     // replace field, extract another field from original struct
     checkAnswer(
       df.withColumn("a", $"a".withField("a", lit(4)).getField("c")),
-      Row(3) :: Row(null):: Nil,
+      Row(3) :: Row(null) :: Nil,
       StructType(Seq(StructField("a", IntegerType, nullable = true))))
   }
 
@@ -1699,18 +1706,18 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
         .withField("a.aa", lit("aa1"))
         .withField("b.ba", lit("ba1"))
         .withField("a.ab", lit("ab1"))),
-        Row(Row(Row("aa1", "ab1"), Row("ba1"))) :: Nil,
-        StructType(Seq(
-          StructField("data", StructType(Seq(
-            StructField("a", StructType(Seq(
-              StructField("aa", StringType, nullable = false),
-              StructField("ab", StringType, nullable = false)
-            )), nullable = false),
-            StructField("b", StructType(Seq(
-              StructField("ba", StringType, nullable = false)
-            )), nullable = false)
+      Row(Row(Row("aa1", "ab1"), Row("ba1"))) :: Nil,
+      StructType(Seq(
+        StructField("data", StructType(Seq(
+          StructField("a", StructType(Seq(
+            StructField("aa", StringType, nullable = false),
+            StructField("ab", StringType, nullable = false)
+          )), nullable = false),
+          StructField("b", StructType(Seq(
+            StructField("ba", StringType, nullable = false)
           )), nullable = false)
-        ))
+        )), nullable = false)
+      ))
     )
   }
 
@@ -1722,24 +1729,24 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
 
     checkAnswer(
       df.withColumn("data", struct()
-          .withField("a", struct().withField("aa", lit("aa1")))
-          .withField("b", struct().withField("ba", lit("ba1")))
-        )
+        .withField("a", struct().withField("aa", lit("aa1")))
+        .withField("b", struct().withField("ba", lit("ba1")))
+      )
         .withColumn("data", col("data").withField("b.bb", lit("bb1")))
         .withColumn("data", col("data").withField("a.ab", lit("ab1"))),
-        Row(Row(Row("aa1", "ab1"), Row("ba1", "bb1"))) :: Nil,
-        StructType(Seq(
-          StructField("data", StructType(Seq(
-            StructField("a", StructType(Seq(
-              StructField("aa", StringType, nullable = false),
-              StructField("ab", StringType, nullable = false)
-            )), nullable = false),
-            StructField("b", StructType(Seq(
-              StructField("ba", StringType, nullable = false),
-              StructField("bb", StringType, nullable = false)
-            )), nullable = false)
+      Row(Row(Row("aa1", "ab1"), Row("ba1", "bb1"))) :: Nil,
+      StructType(Seq(
+        StructField("data", StructType(Seq(
+          StructField("a", StructType(Seq(
+            StructField("aa", StringType, nullable = false),
+            StructField("ab", StringType, nullable = false)
+          )), nullable = false),
+          StructField("b", StructType(Seq(
+            StructField("ba", StringType, nullable = false),
+            StructField("bb", StringType, nullable = false)
           )), nullable = false)
-        ))
+        )), nullable = false)
+      ))
     )
   }
 
@@ -2138,9 +2145,9 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
       StructType(Seq(StructField("a", structType, nullable = true))))
 
     def check(
-      fieldOps: Column => Column,
-      getFieldName: String,
-      expectedValue: Option[Int]): Unit = {
+               fieldOps: Column => Column,
+               getFieldName: String,
+               expectedValue: Option[Int]): Unit = {
 
       def query(df: DataFrame): DataFrame =
         df.select(fieldOps(col("a")).getField(getFieldName).as("res"))
@@ -2231,7 +2238,7 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
     checkAnswer(
       nullableStructLevel2.select(
         col("a").withField("c", col("a.a.c")).dropFields("a.c").as("res")),
-      Row(null) :: Row(Row(null, null)) ::  Row(Row(Row(1, null), 3)) :: Nil,
+      Row(null) :: Row(Row(null, null)) :: Row(Row(Row(1, null), 3)) :: Nil,
       StructType(Seq(
         StructField("res", StructType(Seq(
           StructField("a", StructType(Seq(
@@ -2298,7 +2305,7 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
 
     // we can't access the nested column in subsequent select statement after dropping it in a
     // previous select statement
-    intercept[AnalysisException]{
+    intercept[AnalysisException] {
       structLevel1
         .select($"a".dropFields("c").as("a"))
         .select($"a".withField("z", $"a.c")).as("a")
@@ -2826,9 +2833,9 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
           Row(Duration.ofMillis(333)))
         checkAnswer(
           Seq((LocalDateTime.of(2021, 3, 31, 10, 0, 0)
-              .atZone(DateTimeUtils.getZoneId(tz)).toInstant, LocalDate.of(2020, 3, 31)))
+            .atZone(DateTimeUtils.getZoneId(tz)).toInstant, LocalDate.of(2020, 3, 31)))
             .toDF("ts", "d")
-          .select($"ts" - $"d"),
+            .select($"ts" - $"d"),
           Row(Duration.ofDays(365).plusHours(10)))
       }
     }
@@ -2903,5 +2910,41 @@ class ColumnExpressionSuite extends QueryTest with SharedSparkSession {
         checkAnswer(df, Row(add, add, sub))
       }
     }
+  }
+
+  test("SPARK-36778: add ilike API for scala") {
+    // scalastyle:off
+    // non ascii characters are not allowed in the code, so we disable the scalastyle here.
+    // null handling
+    val nullDf = Seq("a", null).toDF("src")
+    checkAnswer(nullDf.filter($"src".ilike("A")), Row("a"))
+    checkAnswer(nullDf.filter($"src".ilike(null)), spark.emptyDataFrame)
+    // simple pattern
+    val simpleDf = Seq("a", "A", "abdef", "a_%b", "addb", "abC", "a\nb").toDF("src")
+    checkAnswer(simpleDf.filter($"src".ilike("a")), Seq("a", "A").toDF())
+    checkAnswer(simpleDf.filter($"src".ilike("A")), Seq("a", "A").toDF())
+    checkAnswer(simpleDf.filter($"src".ilike("b")), spark.emptyDataFrame)
+    checkAnswer(simpleDf.filter($"src".ilike("aBdef")), Seq("abdef").toDF())
+    checkAnswer(simpleDf.filter($"src".ilike("a\\__b")), Seq("a_%b").toDF())
+    checkAnswer(simpleDf.filter($"src".ilike("A_%b")), Seq("a_%b", "addb", "a\nb").toDF())
+    checkAnswer(simpleDf.filter($"src".ilike("a%")), simpleDf)
+    checkAnswer(simpleDf.filter($"src".ilike("a_b")), Seq("a\nb").toDF())
+    // double-escaping backslash
+    val dEscDf = Seq("\\__", "\\\\__").toDF("src")
+    checkAnswer(dEscDf.filter($"src".ilike("\\\\__")), Seq("\\__").toDF())
+    checkAnswer(dEscDf.filter($"src".ilike("%\\\\%\\%")), spark.emptyDataFrame)
+    // unicode
+    val uncDf = Seq("a\u20ACA", "A€a", "a€AA", "a\u20ACaz", "ЀЁЂѺΏỀ").toDF("src")
+    checkAnswer(uncDf.filter($"src".ilike("_\u20AC_")), Seq("a\u20ACA", "A€a").toDF())
+    checkAnswer(uncDf.filter($"src".ilike("_€_")), Seq("a\u20ACA", "A€a").toDF())
+    checkAnswer(uncDf.filter($"src".ilike("_\u20AC_a")), Seq("a€AA").toDF())
+    checkAnswer(uncDf.filter($"src".ilike("_€_Z")), Seq("a\u20ACaz").toDF())
+    checkAnswer(uncDf.filter($"src".ilike("ѐёђѻώề")), Seq("ЀЁЂѺΏỀ").toDF())
+    // escape char
+    val escCDf = Seq("Addb", "a_%b").toDF("src")
+    checkAnswer(escCDf.filter($"src".ilike("a%#%b", '#')), Seq("a_%b").toDF())
+    checkAnswer(escCDf.filter($"src".ilike("A%$%b", '$')), Seq("a_%b").toDF())
+    checkAnswer(escCDf.filter($"src".ilike("a%+%B", '+')), Seq("a_%b").toDF())
+    // scalastyle:on
   }
 }
