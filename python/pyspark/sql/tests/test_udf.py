@@ -162,13 +162,16 @@ class UDFTests(ReusedSQLTestCase):
         import random
 
         udf_random_col = udf(lambda: int(100 * random.random()), "int").asNondeterministic()
-        df = self.spark.range(10)
 
-        with QuietTest(self.sc):
-            with self.assertRaisesRegex(AnalysisException, "nondeterministic"):
-                df.groupby("id").agg(sum(udf_random_col())).collect()
-            with self.assertRaisesRegex(AnalysisException, "nondeterministic"):
-                df.agg(sum(udf_random_col())).collect()
+        def f():
+            random.seed(42)
+            return int(100 * random.random())  # return 63 every time
+
+        udf_random_col = udf(f, "int").asNondeterministic()
+        df = self.spark.createDataFrame([x for x in range(5) for y in range(2)], IntegerType())
+        result = df.groupby("value").agg(sum(udf_random_col())).collect()
+        for row in result:
+            self.assertEqual(row[1], 126)
 
     def test_chained_udf(self):
         self.spark.catalog.registerFunction("double", lambda x: x + x, IntegerType())
