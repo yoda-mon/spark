@@ -3011,7 +3011,7 @@ object SubtractDates {
   arguments = """
     Arguments:
       * sourceTz - the time zone for the input timestamp
-          - if not specified, SESSION_LOCAL_TIMEZONE is used when sourceTs is timestamp_ntz,
+          - if not specified, SESSION_LOCAL_TIMEZONE.key is used when sourceTs is timestamp_ntz,
             or timezone of sourceTs is used when sourceTs is timestamp_ltz
       * targetTz - the time zone to which the input timestamp should be converted
       * sourceTs - a timestamp
@@ -3030,7 +3030,8 @@ case class ConvertTimezone(
     sourceTz: Expression,
     targetTz: Expression,
     sourceTs: Expression)
-  extends TernaryExpression with ImplicitCastInputTypes with NullIntolerant {
+  extends TernaryExpression with ImplicitCastInputTypes with NullIntolerant
+    with TimeZoneAwareExpression {
 
   def this(targetTz: Expression, sourceTs: Expression) = {
     this(
@@ -3069,4 +3070,10 @@ case class ConvertTimezone(
       newThird: Expression): ConvertTimezone = {
     copy(sourceTz = newFirst, targetTz = newSecond, sourceTs = newThird)
   }
+
+  override def timeZoneId: Option[String] =
+      Option(sourceTz.toString)
+
+  override def withTimeZone(timeZoneId: String): TimeZoneAwareExpression =
+    copy(sourceTz = Literal(timeZoneId))
 }
