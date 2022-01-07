@@ -14,3 +14,5 @@ select to_timestamp_ltz(to_timestamp_ntz(null)), to_timestamp_ltz(to_timestamp_n
 SELECT make_timestamp_ltz(2021, 07, 11, 6, 30, 45.678);
 SELECT make_timestamp_ltz(2021, 07, 11, 6, 30, 45.678, 'CET');
 SELECT make_timestamp_ltz(2021, 07, 11, 6, 30, 60.007);
+
+SELECT convert_timezone('America/Los_Angeles', timestamp'2022-01-01 00:00:00 Europe/Moscow');
