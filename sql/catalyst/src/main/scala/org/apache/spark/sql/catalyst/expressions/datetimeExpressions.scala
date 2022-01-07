@@ -3029,9 +3029,13 @@ object SubtractDates {
 case class ConvertTimezone(
     sourceTz: Expression,
     targetTz: Expression,
-    sourceTs: Expression)
+    sourceTs: Expression,
+    timeZoneId: Option[String] = None)
   extends TernaryExpression with ImplicitCastInputTypes with NullIntolerant
     with TimeZoneAwareExpression {
+
+  def this(sourceTz: Expression, targetTz: Expression, sourceTs: Expression) =
+    this(sourceTz, targetTz, sourceTs, None)
 
   def this(targetTz: Expression, sourceTs: Expression) = {
     this(
@@ -3071,9 +3075,6 @@ case class ConvertTimezone(
     copy(sourceTz = newFirst, targetTz = newSecond, sourceTs = newThird)
   }
 
-  override def timeZoneId: Option[String] =
-      Option(sourceTz.toString)
-
   override def withTimeZone(timeZoneId: String): TimeZoneAwareExpression =
-    copy(sourceTz = Literal(timeZoneId))
+    copy(timeZoneId = Option(timeZoneId))
 }
